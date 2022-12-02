@@ -73,6 +73,7 @@ GO
 drop table if exists zipcodes
 GO
 
+drop table if exists type_of_services
 -- UP Metadata
 
 
@@ -84,6 +85,18 @@ create table zipcodes (
     zipcode_state char(2) not null,
     constraint pk_zipcodes_zipcode primary key(zipcode)
 )
+GO
+
+create table type_of_services (
+    type_id int identity not null,
+    type_name varchar(20) not null,
+    type_food_offered int not null default 0,
+    type_alcohol_offered int not null default 0,
+    constraint pk_services_types_type_id primary key (type_id),   
+ )
+
+
+
 GO
 create table services (
     service_id int identity not null,
@@ -211,6 +224,14 @@ alter table tickets
 
 
 -- UP Data
+
+insert into type_of_services
+    (type_name ) 
+    values
+    ('Food and Beverage'), ('Music'), ('Organizing')
+
+
+GO 
 
 
 insert into zipcodes 
