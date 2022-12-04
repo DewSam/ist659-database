@@ -85,6 +85,22 @@ drop table if exists types_of_services
 GO
 
 
+
+
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_requests__request_venue_id')
+    alter table requests drop constraint fk_requests__request_venue_id
+GO
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_request_made_by_id ')
+    alter table requests drop constraint fk_request_made_by_id 
+GO
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_request_submitted_to_id')
+    alter table requests drop constraint fk_request_submitted_to_id       
+
+drop table if exists requests
+GO
 if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
     where CONSTRAINT_NAME='fk_venues_venue_zipcode')
     alter table venues drop constraint fk_venues_venue_zipcode
@@ -200,12 +216,6 @@ alter table service_type
     add constraint  fk_service_type_type_id foreign key (type_id)
         references type_of_services(type_id)
 
-GO
- /*
-alter table services 
-    add constraint fk_services_venue_zipcode foreign key (venue_zipcode)
-        references zipcodes(zipcode)
-*/
 
 GO
 create table venues (
@@ -226,8 +236,31 @@ alter table venues
     add constraint  fk_venue_owner_id foreign key (venue_owner_id)
         references organizations(organization_id)
 
+GO
+create table requests (
+    request_id int identity not null,
+    request_estimated_attendance int not null,
+    request_status varchar(10) not null default 'pending', --pending,  approved, rejected
+    request_made_by_id int not null,
+    request_submitted_to_id int not null,
+    request_venue_id int not null,
+    constraint pk_requests_request_id primary key (request_id),   
+ )
+GO 
+alter table requests
+    add constraint  fk_request_submitted_to_id foreign key (request_submitted_to_id)
+        references organizations(organization_id)
+GO
+alter table requests
+    add constraint  fk_request_made_by_id foreign key (request_made_by_id)
+        references organizations(organization_id)       
+GO
+alter table requests
+    add constraint  fk_requests__request_venue_id foreign key (request_venue_id)
+        references venues (venue_id)        
 
 
+GO
 create table event_types (
     event_type varchar(50) not null, 
     constraint pk_event_type  primary key (event_type),   
@@ -358,6 +391,13 @@ insert into venues
 GO
 
 
+insert into requests
+    ( request_estimated_attendance,request_status, request_made_by_id, request_submitted_to_id ,request_venue_id )  
+    values
+    (20,'pending',1,3,1)
+
+
+Go
 insert into services
     ( my_service_name,service_price, service_provider_id)  
     values
@@ -419,5 +459,5 @@ select * from type_of_services
 select * from service_type
 select * from organization_type_lookup
 select * from organizations
-
+select * from requests 
 GO
