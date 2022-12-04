@@ -1,6 +1,8 @@
 use master
 GO
 
+--uncomment below lines if you are running the script for the  first time
+
 --drop database if exists myEvent_v1;
 
 --CREATE database myEvent_v1;
@@ -189,7 +191,9 @@ create table type_of_services (
     type_name varchar(20) not null,
     type_food_offered int not null default 0,
     type_alcohol_offered int not null default 0,
-    constraint pk_services_types_type_id primary key (type_id),   
+    constraint pk_services_types_type_id primary key (type_id),
+    constraint ck_type_of_services_food_offered CHECK ( type_food_offered  = 0 OR  type_food_offered = 1 ),
+    constraint ck_type_of_services_alcohol_offered  CHECK (  type_alcohol_offered  = 0 OR   type_alcohol_offered  = 1 )   
  )
 
 
@@ -201,7 +205,8 @@ create table services (
     service_price money not null,
     --service_type_id int not null,
     service_provider_id int not null,
-    constraint pk_services_service_id primary key (service_id),   
+    constraint pk_services_service_id primary key (service_id), 
+    constraint ck_services_service_price CHECK ( service_price >=0)   
  )
 GO
 alter table services
@@ -232,7 +237,8 @@ create table venues (
     venue_street_address varchar(50) not null,
     venue_zipcode char(5) not null,
     venue_owner_id int not null,
-    constraint pk_venues_venue_id primary key (venue_id),   
+    constraint pk_venues_venue_id primary key (venue_id),
+    constraint ck_venues_venue_capacity CHECK ( venue_capacity >=0)      
  )
  GO
 alter table venues 
@@ -258,7 +264,9 @@ create table requests (
     request_made_by_id int not null,
     request_submitted_to_id int not null,
     request_venue_id int not null,
-    constraint pk_requests_request_id primary key (request_id),   
+    constraint pk_requests_request_id primary key (request_id),
+    constraint ck_requests_request_estimated_attendance CHECK ( request_estimated_attendance >=0 ) 
+       
  )
 GO 
 alter table requests
@@ -293,7 +301,8 @@ create table events (
     event_venue_id int not null,
     event_service_id int not null,
     event_description varchar(100),  
-    constraint pk_events_event_id primary key (event_id),   
+    constraint pk_events_event_id primary key (event_id),
+    constraint ck_events_event_length CHECK ( event_length >=0 AND event_length <= 20)   
 )
 Go
 alter table events 
@@ -344,6 +353,7 @@ create table reviews (
     review_person_id int not null,
    
     constraint pk_reviews_review_id primary key (review_id), 
+    constraint ck_reviews_review_rating CHECK ( review_rating >=0 AND review_rating <= 5)
 )        
 
 GO
@@ -364,7 +374,9 @@ create table tickets (
     ticket_event_id int not null,
     ticket_person_id int not null,
    
-    constraint pk_tickets_ticket_id primary key (ticket_id), 
+    constraint pk_tickets_ticket_id primary key (ticket_id),
+    constraint ck_tickets_ticket_attended CHECK ( ticket_attended = 0 OR  ticket_attended = 1 )  
+    
 )        
 
 GO
@@ -426,7 +438,7 @@ insert into services
     ('Food and Beverage', 20,2)
 GO 
 insert into type_of_services
-    (type_name ) 
+    (type_name) 
     values
     ('Food and Beverage'), ('Music'), ('Organizing')
 GO 
