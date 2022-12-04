@@ -97,8 +97,14 @@ if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS
 GO
 if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
     where CONSTRAINT_NAME='fk_request_submitted_to_id')
-    alter table requests drop constraint fk_request_submitted_to_id       
+    alter table requests drop constraint fk_request_submitted_to_id
 
+GO
+
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_requests__request_status')
+    alter table requests drop constraint fk_requests__request_status
+GO
 drop table if exists requests
 GO
 if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
@@ -129,7 +135,8 @@ drop table if exists organization_type_lookup
 Go
 drop table if exists zipcodes
 GO
-
+drop table if exists request_statuses
+GO
 drop table if exists type_of_services
 
 -- UP Metadata
@@ -235,6 +242,13 @@ alter table venues
 alter table venues
     add constraint  fk_venue_owner_id foreign key (venue_owner_id)
         references organizations(organization_id)
+GO
+
+create table request_statuses (
+status_type varchar(10) not null
+constraint pk_requests_status primary key (status_type),  
+)
+
 
 GO
 create table requests (
@@ -257,7 +271,11 @@ alter table requests
 GO
 alter table requests
     add constraint  fk_requests__request_venue_id foreign key (request_venue_id)
-        references venues (venue_id)        
+        references venues (venue_id)   
+GO        
+alter table requests
+    add constraint  fk_requests__request_status foreign key (request_status)
+        references request_statuses (status_type)             
 
 
 GO
@@ -389,8 +407,12 @@ insert into venues
     ('Hinds iCafe', 20,'school of Information Studies','13210',3)
 
 GO
+insert into request_statuses
+(status_type)
+VALUES
+('pending'),('approved'),('rejected')
 
-
+GO
 insert into requests
     ( request_estimated_attendance,request_status, request_made_by_id, request_submitted_to_id ,request_venue_id )  
     values
@@ -460,4 +482,5 @@ select * from service_type
 select * from organization_type_lookup
 select * from organizations
 select * from requests 
+select * from request_statuses
 GO
