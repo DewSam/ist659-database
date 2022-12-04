@@ -1,9 +1,9 @@
 use master
 GO
 
-drop database if exists myEvent_v1;
+--drop database if exists myEvent_v1;
 
-CREATE database myEvent_v1;
+--CREATE database myEvent_v1;
 
 
 -- DOWN
@@ -49,14 +49,39 @@ if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS
     where CONSTRAINT_NAME='fk_events_event_service_id')
     alter table events drop constraint fk_events_event_service_id
 GO 
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_events_event_organizer_id')
+    alter table events drop constraint fk_events_event_organizer_id
 
+Go 
 drop table if exists events
 GO
 
 drop table if exists event_types
 GO
 
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_service_type_service_id')
+    alter table service_type drop constraint fk_service_type_service_id
+
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_service_type_type_id')
+    alter table service_type drop constraint fk_service_type_type_id
+
+
+Go
+drop table if exists service_type
+Go 
+
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_service_provider_id')
+    alter table services drop constraint fk_service_provider_id
+
+GO
 drop table if exists services
+GO
+
+drop table if exists types_of_services
 GO
 
 
@@ -65,17 +90,33 @@ if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS
     alter table venues drop constraint fk_venues_venue_zipcode
 
 GO    
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_venue_owner_id')
+    alter table venues drop constraint fk_venue_owner_id
 
+GO 
 drop table if exists venues
 GO
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_organization_zipcode')
+    alter table organizations drop constraint fk_organization_zipcode
+GO
 
+if exists(select * from INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+    where CONSTRAINT_NAME='fk_organization_type')
+    alter table organizations drop constraint fk_organization_type    
 
+Go
+drop table if exists organizations
+Go
+drop table if exists organization_type_lookup 
+Go
 drop table if exists zipcodes
 GO
 
 drop table if exists type_of_services
--- UP Metadata
 
+-- UP Metadata
 
 GO
 create table zipcodes (
@@ -87,6 +128,39 @@ create table zipcodes (
 )
 GO
 
+create table organization_type_lookup (
+    org_type_name varchar(20) not null
+    constraint pk_organization_organization_type  primary key(org_type_name)
+)
+
+
+GO
+create table organizations (
+   organization_id int identity not null,
+    organization_type varchar(20) not null,
+    organization_name varchar(20) not null,
+    organization_email varchar(50) not null,
+    organization_phone_no char(10) not null,
+    organization_reg_no char(6) not null,
+    organization_street_address varchar(50) not null,
+    organization_zipcode char(5) not NULL, 
+    constraint pk_organization_id primary key (organization_id),
+    constraint u_organization_email unique (organization_email),
+    constraint u_organization_reg_no unique (organization_reg_no),
+)
+GO
+
+alter table  organizations
+    add constraint fk_organization_zipcode foreign key (organization_zipcode)
+        references zipcodes(zipcode)
+
+alter table organizations
+    add constraint  fk_organization_type foreign key (organization_type)
+        references organization_type_lookup(org_type_name)
+
+
+
+GO 
 create table type_of_services (
     type_id int identity not null,
     type_name varchar(20) not null,
@@ -102,11 +176,31 @@ create table services (
     service_id int identity not null,
     my_service_name varchar(20) not null,
     service_price money not null,
-    service_type_id int not null,
+    --service_type_id int not null,
     service_provider_id int not null,
     constraint pk_services_service_id primary key (service_id),   
  )
+GO
+alter table services
+    add constraint  fk_service_provider_id foreign key (service_provider_id)
+        references organizations(organization_id)
+
  GO
+ create table service_type (
+    service_id int not null,
+    type_id int not null,
+    constraint pk_service_type primary key(service_id, type_id )
+)
+GO
+alter table  service_type
+    add constraint fk_service_type_service_id foreign key (service_id)
+        references services(service_id)
+
+alter table service_type
+    add constraint  fk_service_type_type_id foreign key (type_id)
+        references type_of_services(type_id)
+
+GO
  /*
 alter table services 
     add constraint fk_services_venue_zipcode foreign key (venue_zipcode)
@@ -127,6 +221,10 @@ create table venues (
 alter table venues 
     add constraint fk_venues_venue_zipcode foreign key (venue_zipcode)
         references zipcodes(zipcode)
+
+alter table venues
+    add constraint  fk_venue_owner_id foreign key (venue_owner_id)
+        references organizations(organization_id)
 
 
 
@@ -158,8 +256,14 @@ GO
 alter table events 
     add constraint fk_events_event_service_id foreign key (event_service_id)
         references services(service_id)
-
 GO
+alter table events 
+    add constraint fk_events_event_organizer_id foreign key (event_organizer_id)
+        references organizations(organization_id)
+GO
+
+
+
 create table people (
     person_id int identity not null,
     person_email varchar(50) not null,
@@ -225,34 +329,50 @@ alter table tickets
 
 -- UP Data
 
-insert into type_of_services
-    (type_name ) 
-    values
-    ('Food and Beverage'), ('Music'), ('Organizing')
-
-
-GO 
-
 
 insert into zipcodes 
     (zipcode, zipcode_area_name, zipcode_city,zipcode_state ) 
     values
     ('13210','Brighton PL', 'Syracuse', 'NY')
 
+Go
+insert into organization_type_lookup 
+values
+('Host'),('Service_Provider'),('Venue_Owner'), ('Individual')
+GO 
+
+insert into organizations
+(organization_type, organization_name, organization_email, organization_phone_no,organization_reg_no,organization_street_address,organization_zipcode)
+values
+('Host', 'iGSO', 'iGSO@syr.edu', '315676630', 'R01231', 'ischool','13210'),
+('Service_Provider', 'PANDA EXPRESS', 'PEXPRESS@syr.edu', '315699630', 'R01232', 'Shine Student Center','13210'),
+('Venue_Owner', 'ischool', 'ischool@syr.edu', '315676622', 'R01233', 'ischool','13210')
+
 GO 
 
 insert into venues
     ( venue_name,venue_capacity, venue_street_address, venue_zipcode,venue_owner_id)  
     values
-    ('Hinds iCafe', 20,'school of Information Studies','13210',1)
+    ('Hinds iCafe', 20,'school of Information Studies','13210',3)
 
 GO
 
 
 insert into services
-    ( my_service_name,service_price, service_type_id, service_provider_id)  
+    ( my_service_name,service_price, service_provider_id)  
     values
-    ('Food and Beverage', 20,1,1)
+    ('Food and Beverage', 20,2)
+GO 
+insert into type_of_services
+    (type_name ) 
+    values
+    ('Food and Beverage'), ('Music'), ('Organizing')
+GO 
+insert into service_type
+(service_id, type_id)
+VALUES
+(1,2)
+
 
 
 GO
@@ -286,13 +406,6 @@ insert into tickets
     (2022-02-01 , 1, 1) 
 
 
-
-
-  
-
-
-
-
 -- Verify
 select * from zipcodes
 select * from people
@@ -302,5 +415,9 @@ select * from event_types
 select * from events
 select * from venues
 select * from services 
+select * from type_of_services
+select * from service_type
+select * from organization_type_lookup
+select * from organizations
 
 GO
